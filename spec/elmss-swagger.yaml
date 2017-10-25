@@ -111,7 +111,7 @@ paths:
     get:
       tags:
         - public
-      summary: Listing describing collections of manuscripts
+      summary: Listing that describes collections of manuscripts
       description: Get a listing of pre-selected collections of manuscripts
       operationId: listCollections
       produces:
