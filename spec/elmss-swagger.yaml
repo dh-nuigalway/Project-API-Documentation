@@ -1,0 +1,573 @@
+swagger: '2.0'
+info:
+  description: >-
+    API documentation for the Earlier Latin Manuscripts project at NUI Galway. This project
+    is led by Mark Stansbury.
+  version: 1.0.0
+  title: Earlier Latin Manuscripts @ NUI Galway
+  termsOfService: 'https://elmss.nuigalway.ie/about/technical/'
+  contact:
+    email: david.d.kelly@nuigalway.ie
+  license:
+    name: Creative Commons Attribution-NonCommercial 4.0 International License
+    url: 'http://creativecommons.org/licenses/by-nc/4.0/'
+host: elmss.nuigalway.ie
+basePath: /api/v1
+tags:
+  - name: public
+    description: Public facing catalogue access
+    externalDocs:
+      description: Find out more
+      url: 'https://elmss.nuigalway.ie'
+schemes:
+  - https
+paths:
+  /catalogue:
+    get:
+      tags:
+        - public
+      summary: View the full manuscript catalogue listing
+      description: ''
+      operationId: catalogueIndex     
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/Collection'
+            
+  '/catalogue/{catalogueItemId}':
+    get:
+      tags:
+        - public
+      summary: Find manuscript by ID
+      description: Returns a single manuscript
+      operationId: showCatalogueItem
+      produces:
+        - application/json
+      parameters:
+        - name: catalogueItemId
+          in: path
+          description: ID of manuscript to return
+          required: true
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/Item'
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: Manuscript not found
+          
+  /catalogue/filter:
+    get:
+      tags:
+        - public
+      summary: Filter manuscript collection
+      description: Filter manuscript collection using parameter values
+      operationId: filterCatalogue
+      produces:
+        - application/json
+      parameters:
+        - name: keyword
+          in: query
+          description: Search by keyword; can refine using "and" / "or" 
+          required: false
+          type: string
+        - name: scripts
+          in: query
+          description: Name of script to match (based on Manuscript.script)
+          required: false
+          type: array
+          items:
+            type: string
+        # - name: date['numerical_date_start']
+        #   in: query
+        #   description: range search using earliest / latest years
+        #   required: false
+        #   type: string
+        # - name: date['numerical_end_start']
+        #   in: query
+        #   description: range search using earliest / latest years
+        #   required: false
+        #   type: string
+            
+          
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/FilterCollection'
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: Manuscript not found
+  
+  /corpus:
+    get:
+      tags:
+        - public
+      summary: Listing describing collections of manuscripts
+      description: Get a listing of pre-selected collections of manuscripts
+      operationId: listCollections
+      produces:
+        - application/json
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/Corpus'
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: Manuscript not found
+          
+  '/corpus/{corpusId}':
+    get:
+      tags:
+        - public
+      summary: Find a single collection by its ID
+      description: Returns a single manuscript
+      operationId: showCollection
+      produces:
+        - application/json
+      parameters:
+        - name: corpusId
+          in: path
+          description: ID of collection to return
+          required: true
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: successful operation
+          schema:
+            $ref: '#/definitions/CorpusSingle'
+        '400':
+          description: Invalid ID supplied
+        '404':
+          description: Manuscript not found
+
+definitions:
+  Item: 
+    type: object
+    properties:
+      item:
+        $ref: '#/definitions/Manuscript'
+      contributors:
+        type: array
+        items:
+          type: object
+          description: Not currently published
+          
+  Collection:
+    type: array
+    items:
+      $ref: '#/definitions/ManuscriptMinimal'
+  
+  FilterCollection: 
+    type: object
+    description: Results collection returned from filter searches
+    properties:
+      library_map_data:
+        type: object
+        properties:
+          min:
+            type: integer
+          max: 
+            type: integer
+          data:
+            type: object
+            properties:
+              {city}: 
+                type: object
+                description: Object containing number of scripts per city, keyed by city
+                properties:
+                  count:
+                    type: integer
+                  lat:
+                    type: number
+                    description: geo-coord latitude of library
+                  lon:
+                    type: number
+                    description: geo-coord longitude of library
+                  data: 
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        count: 
+                          type: integer
+                        city: 
+                          type: string
+                        library: 
+                          type: string
+                        library_id:
+                          type: integer
+      script_types:
+        type: object
+        description: Dataset of script types, formatted for use with Highcharts
+        properties:
+          series:
+            type: array
+            items:
+              type: object
+              properties:
+                name: 
+                  type: string
+                  description: Script Name
+                data:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      y:
+                        type: integer
+                      x:
+                        type: integer
+                      date_string:
+                        type: string
+                        description: label & method of grouping by date
+          scripts:
+            type: array
+            description: array of names of script types
+            items:
+              type: string
+      data:
+        type: array
+        items:
+          $ref: '#/definitions/Manuscript'
+      
+  Corpus: 
+    type: object
+    description: Details about the collection, without the individual manuscripts included
+    properties:
+      id: 
+        type: integer
+      name: 
+        type: string
+        description: Title of the collection
+      description:
+        type: string
+        description: Markdown description of the collection
+      description_html:
+        type: string
+        description: HTML formatted description of the collection, based on description
+      show_map_visualisation: 
+        type: boolean
+        description: Is there map data associated with the collection which can be displayed?
+      show_chart_visualisation: 
+        type: boolean
+        description: Is there chart data associated with the collection which can be displayed?
+  
+  CorpusSingle: 
+    type: object
+    description: In addition to details of the collection, this includes the individual manuscripts within the collection
+    properties:
+      id: 
+        type: integer
+      name: 
+        type: string
+        description: Title of the collection
+      description:
+        type: string
+        description: Markdown description of the collection
+      description_html:
+        type: string
+        description: HTML formatted description of the collection, based on description
+      show_map_visualisation: 
+        type: boolean
+        description: Is there map data associated with the collection which can be displayed?
+      show_chart_visualisation: 
+        type: boolean
+        description: Is there chart data associated with the collection which can be displayed?
+      catalogue:
+        type: array
+        items:
+          $ref: '#/definitions/Manuscript'
+      
+  ManuscriptMinimal:
+    type: object
+    description: Shortened manuscript data for use in collections
+    properties:
+      id:
+        type: integer
+        format: int64
+      script:
+        type: string
+        example: Cursive Minuscule 
+      date:
+        type: string
+        example: VIIâ€“VIII
+        description: Date string for display 
+      numerical_date_start:
+        type: integer
+        format: int64
+        example: 601
+        description: approximate numeric start date for range, based on date field
+      numerical_end_date:
+        type: integer
+        format: int64
+        example: 800
+        description: approximate numeric end date for range, based on date field
+      cla_volume:
+        type: string
+        example: 5
+      cla_number: 
+        type: string
+        example: 624
+      name: 
+        type: string
+      data_url:
+        type: string
+        description: URL to manuscript JSON document
+      public_url:
+        type: string
+        description: URL to manuscript HTML version of document
+      image_thumb_url:
+        type: string
+        description: URL to thumbnail image of manuscript
+      image_fullsize_url:
+        type: string
+        description: URL to full-size image of manuscript
+    
+  Manuscript:
+    type: object
+    description: Core datatype for individual manuscript records
+    required:
+      - id
+    properties:
+      id:
+        type: integer
+        format: int64
+      serial_number:
+        type: integer
+        format: int64
+      script:
+        type: string
+        example: Cursive Minuscule 
+      date:
+        type: string
+        example: VIIâ€“VIII
+        description: Date string for display 
+      numerical_date_start:
+        type: integer
+        format: int64
+        example: 601
+        description: approximate numeric start date for range, based on date field
+      numerical_end_date:
+        type: integer
+        format: int64
+        example: 800
+        description: approximate numeric end date for range, based on date field
+      cla_volume:
+        type: string
+        example: 5
+      cla_number: 
+        type: string
+        example: 624
+      provenance: 
+        type: string
+        description: Markdown description of manuscript provenance
+      provenance_html:
+        type: string
+        description: HTML representation of provenance field
+      provenance_type:
+        type: string
+      provenance_lat:
+        type: number
+        description: provenance latitude geo-data (float)
+      provenance_lon:
+        type: number
+        description: provenance longitude geo-data (float)
+      contents:
+        type: string
+      support:
+        type: string
+      name: 
+        type: string
+      tm_number:
+        type: string
+        example: 66791
+        description: UID for Trismegistos record (http://www.trismegistos.org/ldab/text.php?tm=66791)
+      image_name:
+        type: string
+      image_copyright: 
+        type: string
+      image_source_url:
+        type: string
+        description: link to original source image
+      facsimiles:
+        type: array
+        description: Collection of URLs to Facsimile of manuscript
+        items: 
+          $ref: '#/definitions/Facsimile'
+      script_commentary:
+        type: string
+        description: Markdown text with commentary on script
+      script_commentary_html:
+        type: string
+        description: HTML representation of script_commentary field
+      parent_id:
+        type: integer
+        format: int64
+        description: Creates a link between partial manuscripts and their "parent"
+      mssparent:
+        $ref: '#/definitions/Manuscript'
+      msschildren:
+        type: array
+        items:
+          $ref: '#/definitions/Manuscript'
+      data_url:
+        type: string
+        description: URL to manuscript JSON document
+      public_url:
+        type: string
+        description: URL to manuscript HTML version of document
+      image_thumb_url:
+        type: string
+        description: URL to thumbnail image of manuscript
+      image_fullsize_url:
+        type: string
+        description: URL to full-size image of manuscript
+      shelfmarks:
+        type: array
+        items:
+          $ref: '#/definitions/Shelfmark'
+      scriptbase:
+        type: array
+        items:
+          $ref: '#/definitions/ScriptBase'
+      scriptfluidity:
+        type: array
+        items:
+          $ref: '#/definitions/ScriptFluidity'
+      scriptletterforms:
+        type: array
+        items:
+          $ref: '#/definitions/ScriptLetterforms'
+      scriptplace:
+        type: array
+        items:
+          $ref: '#/definitions/ScriptPlace'
+      scripttime:
+        type: array
+        items:
+          $ref: '#/definitions/ScriptTime'
+      
+  Shelfmark:
+    type: object
+    required:
+      - id
+    properties:
+      id:
+        type: integer
+        format: int64
+      shelfmark:
+        type: string
+        example: Lat. 12161 [palimpsest new]
+      serial_number: 
+        type: string
+      catalogue_item_id:
+        type: integer
+        description: references the ID of a Manuscript
+      library_id:
+        type: integer
+        description: references the ID of a Library
+      library:
+        $ref: '#/definitions/Library'
+        
+  Library:
+    type: object
+    properties:
+      id:
+        type: integer
+      country:
+        type: string
+        description: Full country name
+        example: France
+      library: 
+        type: string
+        description: Library name in local language
+      library_lat:
+        type: number
+        description: latitude geo-data (float)
+      library_lon:
+        type: number
+        description: longitude geo-data (float)
+  Facsimile:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+      facsimile_url:
+        type: string
+        description: URL to Facsimile of Manuscript
+      catalogue_item_id:
+        type: integer
+        description: References ID on a Manuscript
+  ScriptBase:
+    type: object
+    description: Base script classification
+    properties:
+      id: 
+        type: integer
+      label:
+        type: string
+        description: Human readable label
+  ScriptFluidity:
+    type: object
+    description: indications that the script straddles boundaries
+    properties:
+      id: 
+        type: integer
+      label:
+        type: string
+        description: Human readable label
+  ScriptLetterforms:
+    type: object
+    description: characteristic letterforms of the script
+    properties:
+      id: 
+        type: integer
+      label:
+        type: string
+        description: Human readable label
+        
+  ScriptPlace:
+    type: object
+    description: where the script originated or was written
+    properties:
+      id: 
+        type: integer
+      label:
+        type: string
+        description: Human readable label
+  ScriptTime:
+    type: object
+    description: whether the example falls early or late in the development of the script
+    properties:
+      id: 
+        type: integer
+      label:
+        type: string
+        description: Human readable label
+        
+  ApiResponse:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+      type:
+        type: string
+      message:
+        type: string
+externalDocs:
+  description: Find out more about ELMSS
+  url: 'https://elmss.nuigalway.ie'
